@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<title>Mouseover (Three.js)</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link rel=stylesheet href="css/base.css"/>
+</head>
+<body>
+
+<script src="js/Three.js"></script>
+<script src="js/Detector.js"></script>
+<script src="js/Stats.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/THREEx.KeyboardState.js"></script>
+<script src="js/THREEx.FullScreen.js"></script>
+<script src="js/THREEx.WindowResize.js"></script>
+
+<!-- jQuery code to display an information button and box when clicked. -->
+<script src="js/jquery-1.9.1.js"></script>
+<script src="js/jquery-ui.js"></script>
+<link rel=stylesheet href="css/jquery-ui.css" />
+<link rel=stylesheet href="css/info.css"/>
+<script src="js/info.js"></script>
+<div id="infoButton"></div>
+<div id="infoBox" title="Demo Information">
+This three.js demo is part of a collection at
+<a href="http://stemkoski.github.io/Three.js/">http://stemkoski.github.io/Three.js/</a>
+</div>
+<!-- ------------------------------------------------------------ -->
+
+<div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
+<script>
+/*
+	Three.js "tutorials by example"
+	Author: Lee Stemkoski
+	Date: July 2013 (three.js v59dev)
+*/
+
+// MAIN
+var meshes = [];
+// standard global variables
+var Models = {
+
+				"panorama": {
+
+					name: 	"panorama",
+					url:	"test01.js",
+					author: '<a href="http://www.turbosquid.com/3d-models/blender-camaro/411348" target="_blank">dskfnwn</a>',
+					init_position: [ 0.0, 0.0, 0.0 /*0, 1, 0*/ ],
+					init_rotation: [ 0.0, 0.0, 0.0 /*0, 1, 0*/ ],
+					scale: [-100, 100, 100],
+					init_material: 0,
+					body_materials: [ 0 ],
+
+					object:	null,
+					buttons: null,
+					materials: null,
+					mmap: null
+
+				},
+				
+				"tellurion": {
+
+					name: 	"tellurion",
+					url:	"hio9.js",
+					author: '<a href="http://www.turbosquid.com/3d-models/blender-camaro/411348" target="_blank">dskfnwn</a>',
+					init_position: [ -252800.0, 300.0, 219800 /*0, 1, 0*/ ],
+					init_rotation: [ 0.0, 0.0, 0.0/*0, 1, 0*/ ],
+					scale: [20, 20, 20],
+					init_material: 0,
+					body_materials: [ 0 ],
+
+					object:	null,
+					buttons: null,
+					materials: null,
+					mmap: null,
+					meshes: []
+				},
+				
+				"screen": {
+
+					name: 	"screen",
+					url:	null,
+					author: '<a href="http://www.turbosquid.com/3d-models/blender-camaro/411348" target="_blank">dskfnwn</a>',
+					init_position: [ 0.0, 0.0, -100.0 /*0, 1, 0*/ ],
+					init_rotation: [ 0.0, 0.0, 0.0 /*0, 1, 0*/ ],
+					scale: [10, 10, 10],
+					init_material: 0,
+					body_materials: [ 0 ],
+
+					object:	null,
+					buttons: null,
+					materials: null,
+					mmap: null,
+					meshes: []
+				}
+			};
+
+
+var container, scene, camera, renderer, controls, stats;
+var keyboard = new THREEx.KeyboardState();
+var clock = new THREE.Clock();
+
+// custom global variables
+var cube;
+var projector, mouse = { x: 0, y: 0 }, INTERSECTED;
+
+init();
+animate();
+
+// FUNCTIONS 		
+function init() 
+{
+	// SCENE
+	scene = new THREE.Scene();
+	// CAMERA
+	var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
+	var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 20000;
+	camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+	scene.add(camera);
+	camera.position.set(0,150,400);
+	camera.lookAt(scene.position);	
+	// RENDERER
+	if ( Detector.webgl )
+		renderer = new THREE.WebGLRenderer( {antialias:true} );
+	else
+		renderer = new THREE.CanvasRenderer(); 
+	renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+	container = document.getElementById( 'ThreeJS' );
+	container.appendChild( renderer.domElement );
+	// EVENTS
+	THREEx.WindowResize(renderer, camera);
+	THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
+	// CONTROLS
+	controls = new THREE.OrbitControls( camera, renderer.domElement );
+	// STATS
+	stats = new Stats();
+	stats.domElement.style.position = 'absolute';
+	stats.domElement.style.bottom = '0px';
+	stats.domElement.style.zIndex = 100;
+	container.appendChild( stats.domElement );
+	// LIGHT
+	var light = new THREE.PointLight(0xffffff);
+	light.position.set(0,250,0);
+	scene.add(light);
+	// FLOOR
+	var floorTexture = new THREE.ImageUtils.loadTexture( 'images/checkerboard.jpg' );
+	floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping; 
+	floorTexture.repeat.set( 10, 10 );
+	var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
+	var floorGeometry = new THREE.PlaneGeometry(1000, 1000, 10, 10);
+	var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+	floor.position.y = -0.5;
+	floor.rotation.x = Math.PI / 2;
+	//meshes.push(floor);
+	scene.add(floor);
+	// SKYBOX/FOG
+	var skyBoxGeometry = new THREE.CubeGeometry( 10000, 10000, 10000 );
+	var skyBoxMaterial = new THREE.MeshBasicMaterial( { color: 0x9999ff, side: THREE.BackSide } );
+	var skyBox = new THREE.Mesh( skyBoxGeometry, skyBoxMaterial );
+	scene.add(skyBox);
+	
+	////////////
+	// CUSTOM //
+	////////////
+	var cubeGeometry = new THREE.CubeGeometry( 50, 50, 50 );
+	var cubeMaterial = new THREE.MeshBasicMaterial( { color: 0x000088 } );
+	cube = new THREE.Mesh( cubeGeometry, cubeMaterial );
+	cube.position.set(0,26,0);
+	meshes.push(cube);
+	scene.add(cube);
+	
+	// initialize object to perform world/screen calculations
+	projector = new THREE.Projector();
+	
+	// when the mouse moves, call the given function
+	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+	
+	
+	//*********** Textures ************//
+				//*********** Textures ************//
+				//*********** Textures ************//
+				//*********** Textures ************//
+				//*********** Textures ************//
+				var panoTex = THREE.ImageUtils.loadTexture("2294472375_24a3b8ef46_o.jpg");
+				var teTex =  THREE.ImageUtils.loadTexture("20110501042543396192.jpg");
+				
+				
+	//***********Materials************//
+				//***********Materials************//
+				//***********Materials************//
+				//***********Materials************//
+				//***********Materials************//
+				//initialize material library
+				var mlib = {		
+				"Panorama":         new THREE.MeshLambertMaterial( { map: panoTex, side: THREE.DoubleSide} ),
+				"Tellurion":        new THREE.MeshLambertMaterial( { map: teTex} )
+				}
+				
+		//*********** Models ************//
+				//*********** Models ************//
+				//*********** Models ************//
+				//*********** Models ************//
+				//*********** Models ************//			
+				//create loader
+				var manager = new THREE.LoadingManager();
+				manager.onProgress = function ( item, loaded, total ) {
+
+					//console.log( item, loaded, total );
+
+				};
+				
+				//loader = new THREE.JSONLoader( true );
+				loader = new THREE.ObjectLoader();
+				//document.body.appendChild( loader.statusDomElement );
+				
+				
+				Models[ "tellurion" ].mmap = {
+
+					0: mlib[ "Panorama" ], 			// car body
+					1: mlib[ "Tellurion" ] 		// wheels chrome
+				}
+				
+				
+				
+				loader.load( Models[ "tellurion" ].url, function( object ) { createScene( object, "tellurion") } );
+				co = Date.now() * 0.00005+0.1;
+	
+}
+
+function createScene( object, name ) {
+			
+				//if not add this line, the model look sharp
+				//geometry.computeVertexNormals();
+				console.log("object = ", object);
+				//
+				var counter = 0;
+				
+				var m = new THREE.MeshFaceMaterial();
+
+				for ( var i in Models[ name ].mmap ) {
+
+					m.materials[ i ] = Models[ name ].mmap[ i ];
+
+				}
+				
+				object.traverse( function ( child ) {
+
+						if ( child instanceof THREE.Mesh ) {
+							
+							
+							child.position.x = Models[ name ].init_position[0];
+							child.position.y = Models[ name ].init_position[1];
+							child.position.z = Models[ name ].init_position[2];
+							//child.rotation.x = Models[ name ].init_rotation[0];
+							//child.rotation.y = Models[ name ].init_rotation[1];
+							//child.rotation.z = Models[ name ].init_rotation[2];
+							child.scale.x = Models[ name ].scale[0];
+							child.scale.y = Models[ name ].scale[1];
+							child.scale.z = Models[ name ].scale[2];
+							
+							child.material = Models[ name ].mmap[counter];;
+							
+							Models['tellurion'].meshes[counter] = child;
+							
+							if(name == 'tellurion' && counter == 1)
+							{
+									child.position.x += -10000;
+									child.position.y += 38000;
+							}
+							
+							//scene.add(child);
+							
+							counter++;
+							
+							meshes.push(child);
+						}	
+					} );
+				console.log(typeof object);
+				console.log(object instanceof THREE.Scene);
+				//meshes.push(object);
+				scene.add(object);
+			}
+
+function onDocumentMouseMove( event ) 
+{
+	// the following line would stop any other event handler from firing
+	// (such as the mouse's TrackballControls)
+	// event.preventDefault();
+	
+	// update the mouse variable
+	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+	//console.log("x , y = ", mouse);
+	
+	// find intersections
+	// create a Ray with origin at the mouse position
+	//   and direction into the scene (camera direction)
+	var vector = new THREE.Vector3( mouse.x, mouse.y, 0.01 );
+	projector.unprojectVector( vector, camera );
+	var ray = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+	// create an array containing all objects in the scene with which the ray intersects
+	var intersects = ray.intersectObjects( meshes );
+
+	// INTERSECTED = the object in the scene currently closest to the camera 
+	//		and intersected by the Ray projected from the mouse position 	
+	
+	// if there is one (or more) intersections
+	if ( intersects.length > 0 )
+	{
+		console.log("hio");
+		// if the closest object intersected is not the currently stored intersection object
+		if ( intersects[ 0 ].object != INTERSECTED ) 
+		{
+		    // restore previous intersection object (if it exists) to its original color
+			if ( INTERSECTED ) 
+				INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
+			// store reference to closest object as current intersection object
+			INTERSECTED = intersects[ 0 ].object;
+			// store color of closest object (for later restoration)
+			INTERSECTED.currentHex = INTERSECTED.material.color.getHex();
+			// set a new color for closest object
+			INTERSECTED.material.color.setHex( 0xffff00 );
+		}
+	} 
+	else // there are no intersections
+	{
+		// restore previous intersection object (if it exists) to its original color
+		if ( INTERSECTED ) 
+			INTERSECTED.material.color.setHex( INTERSECTED.currentHex );
+		// remove previous intersection object reference
+		//     by setting current intersection object to "nothing"
+		INTERSECTED = null;
+	}
+}
+
+function animate() 
+{
+    requestAnimationFrame( animate );
+	render();		
+	update();
+}
+
+function update()
+{
+	
+
+
+	if ( keyboard.pressed("z") ) 
+	{ 
+		// do something
+	}
+	
+	controls.update();
+	stats.update();
+}
+
+function render() 
+{
+	renderer.render( scene, camera );
+}
+
+</script>
+
+</body>
+</html>

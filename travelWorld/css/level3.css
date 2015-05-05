@@ -1,0 +1,410 @@
+body{
+z-index: -1000;
+margin-left: 50px;	/*for function bar overlap*/
+}
+
+.country_title{
+/*background-color: aqua;*/
+position: relative;
+/*
+top: 120px;
+left:-45px;*/
+width:1400px;
+height: 220px;
+z-index:-100;
+}
+
+#all_tabs{
+/*background-color: aquamarine;*/
+position: absolute;
+height: 700px;
+width: 1400px;
+top: 0px;
+left: -1340px;
+/*z-index: -10;*/
+transition:left 1s;
+}
+#all_tabs:hover{
+left: -1270px;
+}
+
+.show_tab{
+position: absolute;
+height: 700px;
+width: 1336px;
+float: left;
+}
+
+#tabs-2 .show_content{
+height: 620px;
+margin-top:0px;
+}
+
+
+#tabs-1{
+/*background-color: blueviolet;*/
+background-image: url(../image/scene_img.png);
+z-index: 20;
+left: 0px;
+/*clip: rect(80px,1350px,280px,0px);*/
+clip: rect(220px,1350px,460px,0px);
+transition:left 1s,clip 1s;
+}
+#tabs-1:hover{
+left: 1200px;
+clip: rect(80px,1350px,700px,0px);
+}
+#tabs-2{
+/*background-color: maroon;*/
+background-image: url(../image/food_img.png);
+left: 0px;
+z-index: 10;
+transition:left 1s;
+height: 620px;
+margin-top:80px;
+
+/*clip: rect(80px,1350px,280px,0px);*/
+/*transition:left 1s,clip 1s;*/
+
+/*
+clip: rect(220px,1350px,460px,0px);
+transition:left 1s,clip 1s;*/
+}
+#tabs-2:hover{
+left: 1200px;
+/*clip: rect(80px,1350px,700px,0px);*/
+}
+#tabs-3{
+/*background-color: cadetblue;*/
+background-image: url(../image/activity_img.png);
+left: 0px;
+z-index: 30;
+clip: rect(350px,1350px,550px,0px);
+transition:left 1s,clip 1s;
+}
+#tabs-3:hover{
+left: 1200px;
+clip: rect(80px,1350px,700px,0px);
+}
+#tabs-4{
+/*background-color: blue;*/
+background-image: url(../image/back_img.png);
+left: 0px;
+z-index: 40;
+clip: rect(500px,1350px,700px,0px);
+transition:left 1s,clip 1s;
+}
+#tabs-4:hover{
+left: 1200px;
+clip: rect(80px,1350px,700px,0px);
+}
+
+.my_bar{
+position: relative;
+float: right;
+/*
+right: -469px;
+width: 500px;
+height: 52px;
+*/
+right: -131px;
+width: 166px;
+height: 68px;
+-webkit-transform: rotate(90deg);
+-webkit-transform-origin: 1%;
+}
+
+#tabs-1 .my_bar{
+background-color: chocolate;
+top: 85px;
+}
+#tabs-2 .my_bar{
+background-color: antiquewhite;
+top: 104px;
+}
+#tabs-3 .my_bar{
+background-color: darkgray;
+top: 229px;
+}
+#tabs-4 .my_bar{
+background-color: firebrick;
+top: 354px;
+}
+.show_bar{
+float: left;
+width: 125px;
+position:relative;
+top:25px;
+background-color: aqua;
+}
+.hide_bar{
+float: left;
+background-color: white;
+width: 375px;
+height: 52px;
+}
+
+
+.show_content{
+/*background-color:forestgreen;*/
+position:relative;
+margin-top: 80px;
+margin-left: 145px;
+margin-right: 80px;
+margin-bottom: 20px;
+height: 650px;
+overflow:hidden;
+}
+
+#photo_frame{
+position: absolute;
+/*margin-left: 50px;
+margin-top: 50px;*/
+width: 1100px;
+height: 380px;
+/*background-color: thistle;*/
+clip:rect(0px,1100px,360px,0px);
+}
+
+#photo_article{
+position: absolute;
+width: 1200px;
+top: 680px;
+left: -50px;
+height: 400px;
+/*background-color: grey;*/
+}
+#photo_slider{
+position: absolute;
+left: 0px;
+width: 500000px;
+height: 380px;
+/*background-color: red;*/
+/*transition:left 1s;*/
+}
+/*
+#photo_slider:hover{
+left: -110px;
+}*/
+
+.slider_photo{
+height: 350px;
+width: 400px;
+float: left;
+padding:5px;
+
+}
+
+/*
+.slider_photo:nth-child(1){
+background-color: darkblue;
+}
+.slider_photo:nth-child(2){
+background-color: fuchsia;
+}
+.slider_photo:nth-child(3){
+background-color: tomato;
+}
+.slider_photo:nth-child(4){
+background-color: khaki;
+}
+*/
+
+/*------- food ----------*/
+#food_left{
+width: 390px;
+height: 580px;
+margin-top: 30px;
+float: left;
+}
+#food_middle{
+float: left;
+width: 390px;
+height: 580px;
+margin-top: 30px;
+}
+#food_right{
+float: left;
+width: 330px;
+height: 550px;
+margin-top: 30px;
+}
+
+.food_small{
+/*background-color: green;*/
+position:relative;
+float: left;
+width: 195px;
+height: 200px;
+
+	/*test part*/
+-webkit-transition: -webkit-transform 1s;
+-webkit-transform-style: preserve-3d;
+
+}
+.food_small div{
+position: absolute;
+width: 100%;
+height: 100%;
+
+	/*test part*/
+
+	/*display:inline-block;
+	display:table-cell;*/
+      -webkit-backface-visibility: hidden;
+
+}
+
+/* -----------test part --------------*/
+    #tabs-2 .show_content .back {
+      -webkit-transform: rotateY( 180deg );
+              transform: rotateY( 180deg );
+    }
+	#tabs-2 .show_content .flipped {
+      -webkit-transform: rotateY( 180deg );
+    }
+
+
+/*
+#food_left .food_small:nth-child(1) div:nth-child(2){
+-webkit-transform-style: preserve-3d;
+-webkit-transform-origin: 50% 50%;
+-webkit-transform: perspective(500px) rotateY(-90deg);
+-webkit-backface-visibility: visible;
+}*/
+
+
+.food_big{
+/*background-color: red;*/
+position:relative;
+float: left;
+width: 390px;
+height: 350px;
+	/*test part*/
+-webkit-transition: -webkit-transform 1s;
+-webkit-transform-style: preserve-3d;
+
+}
+.food_big div{
+position: absolute;
+width: 100%;
+height: 100%;
+/*
+perspective(500px);
+-webkit-transform-origin: 50% 50%;
+-webkit-transform: rotateX(0deg) rotateY(0deg);*/
+	/*test part*/
+      -webkit-backface-visibility: hidden;
+
+}
+.food_long{
+/*background-color: yellow;*/
+position:relative;
+	/*test part*/
+-webkit-transition: -webkit-transform 1s;
+-webkit-transform-style: preserve-3d;
+
+}
+.food_long div{
+position: absolute;
+width: 100%;
+height: 100%;
+/*
+perspective(500px);
+-webkit-transform-origin: 50% 50%;
+-webkit-transform: rotateX(0deg) rotateY(0deg);*/
+
+	/*test part*/
+      -webkit-backface-visibility: hidden;
+
+}
+
+/*------- Blog  ------*/
+
+#blog_head{
+/*background-color: red;*/
+position: absolute;
+top:100px;
+left:-90px;
+width: 585px;
+height: 500px;
+}
+
+#blog_article{
+/*background-color: gray;*/
+position: absolute;
+top: 0px;
+left:0px;
+width: 540px;
+height: 110px;
+}
+
+#blog_photo{
+/*background-color: green;*/
+position: absolute;
+width: 550px;
+height: 350px;
+top: 130px;
+left: 470px;
+}
+
+
+/*----------festival-------------*/
+
+
+#fest_g{
+width: 400px;
+height: 320px;
+float: left;
+margin-top: 150px;
+}
+#fest_exp{
+width: 660px;
+height: 470px;
+float: left;
+margin-top: 120px;
+}
+
+
+/*      for  test */
+
+/*
+#card{
+position: absolute;
+left: 200px;
+background-color: gray;
+width: 300px;
+height: 300px;
+-webkit-transition: -webkit-transform 1s;
+-webkit-transform-style: preserve-3d;
+}
+	#card.flipped {
+      -webkit-transform: rotateY( 180deg );
+    }
+
+    #card figure {
+      display: block;
+      height: 100%;
+      width: 100%;
+      line-height: 260px;
+      color: white;
+      text-align: center;
+      font-weight: bold;
+      font-size: 140px;
+      position: absolute;
+      -webkit-backface-visibility: hidden;
+    }
+
+    #card .front {
+      background: red;
+    }
+
+    #card .back {
+      background: blue;
+      -webkit-transform: rotateY( 180deg );
+         -moz-transform: rotateY( 180deg );
+           -o-transform: rotateY( 180deg );
+              transform: rotateY( 180deg );
+    }
+
+*/

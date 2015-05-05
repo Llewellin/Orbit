@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<title>Level1</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link rel=stylesheet href="css/base.css"/>
+</head>
+<body>
+
+<script src="js/Three.js"></script>
+<script src="js/Detector.js"></script>
+<script src="js/Stats.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/THREEx.KeyboardState.js"></script>
+<script src="js/THREEx.FullScreen.js"></script>
+<script src="js/THREEx.WindowResize.js"></script>
+<script src="js/renderers/CSS3DRenderer.js"></script>
+<script src="js/libs/tween.min.js"></script>
+<!-- jQuery code to display an information button and box when clicked. -->
+<script src="js/jquery-1.9.1.js"></script>
+<script src="js/jquery-ui.js"></script>
+<link rel=stylesheet href="css/jquery-ui.css" />
+<link rel=stylesheet href="css/info.css"/>
+<script src="js/info.js"></script>
+<!--<div id="infoButton"></div>-->
+<div id="infoBox" title="Demo Information">
+Movement controls: <br/>
+<ul>
+<li>W/S: Translate Forward/Backward
+<li>A/D: Rotate Left/Right
+<li>Q/E: Translate Left/Right
+<li>R/F: Rotate Up/Down
+<li>Z: Reset position and rotation.
+</ul>
+This three.js demo is part of a collection at
+<a href="http://stemkoski.github.io/Three.js/">http://stemkoski.github.io/Three.js/</a>
+</div>
+<!-- ------------------------------------------------------------ -->
+
+<div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
+<script>
+	var Models = {
+
+				"panorama": {
+
+					name: 	"panorama",
+					url:	"test01.js",
+					author: '<a href="http://www.turbosquid.com/3d-models/blender-camaro/411348" target="_blank">dskfnwn</a>',
+					init_position: [ 0.0, 0.0, 0.0 /*0, 1, 0*/ ],
+					init_rotation: [ 0.0, 0.0, 0.0 /*0, 1, 0*/ ],
+					scale: [-100, 100, 100],
+					init_material: 0,
+					body_materials: [ 0 ],
+
+					object:	null,
+					buttons: null,
+					materials: null,
+					mmap: null,
+					isReady: false
+
+				},
+				
+				"tellurion": {
+
+					name: 	"tellurion",
+					url:	"hio9.js",
+					author: '<a href="http://www.turbosquid.com/3d-models/blender-camaro/411348" target="_blank">dskfnwn</a>',
+					init_position: [ -252800.0, 300.0, 219800 /*0, 1, 0*/ ],
+					init_rotation: [ 0.0, 0.0, 0.0/*0, 1, 0*/ ],
+					scale: [20, 20, 20],
+					init_material: 0,
+					body_materials: [ 0 ],
+
+					object:	null,
+					buttons: null,
+					materials: null,
+					mmap: null,
+					meshes: [],
+					isReady: false
+				},
+				
+				"screen": {
+
+					name: 	"screen",
+					url:	null,
+					author: '<a href="http://www.turbosquid.com/3d-models/blender-camaro/411348" target="_blank">dskfnwn</a>',
+					init_position: [ 0.0, 0.0, -100.0 /*0, 1, 0*/ ],
+					init_rotation: [ 0.0, 0.0, 0.0 /*0, 1, 0*/ ],
+					scale: [10, 10, 10],
+					init_material: 0,
+					body_materials: [ 0 ],
+
+					object:	null,
+					buttons: null,
+					materials: null,
+					mmap: null,
+					meshes: [],
+					isReady: false
+				},
+				
+				"backpack": {
+
+					name: 	"backpack",
+					url:	"b01.js",
+					author: '<a href="http://www.turbosquid.com/3d-models/blender-camaro/411348" target="_blank">dskfnwn</a>',
+					init_position: [ -12000, 500.0, 1900.0 /*0, 1, 0*/ ],
+					init_rotation: [ 0.0, 0.0, 0.0 /*0, 1, 0*/ ],
+					scale: [80, 80, 80],
+					init_material: 0,
+					body_materials: [ 0 ],
+
+					object:	null,
+					buttons: null,
+					materials: null,
+					mmap: null,
+					meshes: [],
+					isReady: false
+				},
+				
+				"surfboard": {
+
+					name: 	"surfboard",
+					url:	"s01.js",
+					author: '<a href="http://www.turbosquid.com/3d-models/blender-camaro/411348" target="_blank">dskfnwn</a>',
+					init_position: [ 12000, 500.0, -1000.0 /*0, 1, 0*/ ],
+					init_rotation: [ Math.PI, Math.PI*0.5, Math.PI /*0, 1, 0*/ ],
+					scale: [80, 80, 80],
+					init_material: 0,
+					body_materials: [ 0 ],
+
+					object:	null,
+					buttons: null,
+					materials: null,
+					mmap: null,
+					meshes: [],
+					isReady: false
+				}
+			};
+			
+var Tweens = [
+	"zero2one",
+	"one2two",
+	"two2one",
+];
+var cssObject;
+var rone2two;
+var r2zero;
+var rNav1;
+var mNav1;
+var rNav2;
+var mNav2;
+var rNav3;
+var mNav3;
+var mouse = { x: 0, y: 0 }, INTERSECTED;
+var meshes = [];
+/*
+	Three.js "tutorials by example"
+	Author: Lee Stemkoski
+	Date: July 2013 (three.js v59dev)
+*/
+
+// MAIN
+
+// standard global variables
+var container, scene, camera, renderer, controls, stats;
+var keyboard = new THREEx.KeyboardState();
+var clock = new THREE.Clock();
+// custom global variables
+var cube;
+var planeMesh;
+var cMode = 0;
+var sBackground = new Audio("wind_valley.mp3");
+var materials = [];
+var particle02, canvasRenderer;
+
+init();
+animate();
+
+// FUNCTIONS 		
+function init() 
+{
+	// SCENE
+	scene = new THREE.Scene();
+	// CAMERA
+	var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
+	var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 20000;
+	camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+	scene.add(camera);
+	//camera.position.set(0,150,400);
+	camera.position.set(-440,55,226);
+	
+	camera.rotation.x = 0.1;
+					camera.rotation.y = -0.006;
+					camera.rotation.z = 0.0007;
+
+	camera.lookAt(scene.position);	
+	//projector
+	projector = new THREE.Projector();
+	// RENDERER
+	if ( Detector.webgl )
+		renderer = new THREE.WebGLRenderer( {antialias:true} );
+	else
+		renderer = new THREE.CanvasRenderer(); 
+	renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+	container = document.getElementById( 'ThreeJS' );
+	container.appendChild( renderer.domElement );
+	// EVENTS
+	THREEx.WindowResize(renderer, camera);
+	THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
+
+	// CONTROLS
+	// MUST REMOVE THIS LINE!!!
+	// controls = ...
+	controls = new THREE.OrbitControls( camera, renderer.domElement );
+
+	// STATS
+	/*
+	stats = new Stats();
+	stats.domElement.style.position = 'absolute';
+	stats.domElement.style.bottom = '0px';
+	stats.domElement.style.zIndex = 100;
+	container.appendChild( stats.domElement );
+	*/
+	// LIGHT
+	var light = new THREE.PointLight(0xFFED97);
+	//init_position: [ -252800.0, 300.0, 219800 /*0, 1, 0*/ ],
+	light.position.set(-252800,300,219800);
+	scene.add(light);
+	var directionalLight = new THREE.DirectionalLight( 0xffffff, 100 );
+	directionalLight.position.set( 2.768, 0.283, 3.032).normalize();
+	//scene.add( directionalLight );
+	var ambient = new THREE.AmbientLight( 0x050505 );
+	//scene.add( ambient );
+	
+	
+	
+	var pointLight = new THREE.PointLight( 0xFFED97);
+	pointLight.intensity = 0.5;
+	pointLight.position.set(-100,0,-10);
+	scene.add( pointLight );
+	
+	var sphereSize = 1000;
+	var pointLightHelper = new THREE.PointLightHelper( pointLight, sphereSize );
+	//scene.add( pointLightHelper );
+	
+	
+	// FLOOR
+	var floorTexture = new THREE.ImageUtils.loadTexture( 'images/Snow_01_UV_H_CM_1.jpg' );
+	floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping; 
+	floorTexture.repeat.set( 500, 500 );
+	var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
+	var floorGeometry = new THREE.PlaneGeometry(100000, 100000, 10, 10);
+	var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+	floor.position.y = -50;
+	floor.rotation.x = Math.PI / 2;
+	//scene.add(floor);
+	// SKYBOX/FOG
+	var skyBoxGeometry = new THREE.CubeGeometry( 10000, 10000, 10000 );
+	var skyBoxMaterial = new THREE.MeshBasicMaterial( { color: 0x9999ff, side: THREE.BackSide } );
+	var skyBox = new THREE.Mesh( skyBoxGeometry, skyBoxMaterial );
+	// scene.add(skyBox);
+	//scene.fog = new THREE.FogExp2( 0x9999ff, 0.00020 );
+	
+	//*********** SkyBox ************//
+	//*********** SkyBox ************//
+	//*********** SkyBox ************//
+	//*********** SkyBox ************//
+	//*********** SkyBox ************//
+	
+	// axes
+	var axes = new THREE.AxisHelper(100);
+	//scene.add( axes );
+	
+	var imagePrefix = "images/sb_iceflow/iceflow_";
+	var directions  = ["rt", "lf", "up", "dn", "bk", "ft"];
+	var imageSuffix = ".png";
+	var skyGeometry = new THREE.CubeGeometry( 5000, 5000, 5000 );	
+	
+	var materialArray = [];
+	for (var i = 0; i < 6; i++)
+		materialArray.push( new THREE.MeshBasicMaterial({
+			map: THREE.ImageUtils.loadTexture( imagePrefix + directions[i] + imageSuffix ),
+			side: THREE.BackSide
+		}));
+	var skyMaterial = new THREE.MeshFaceMaterial( materialArray );
+	var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
+	scene.add( skyBox );
+	
+	//*********** Textures ************//
+	//*********** Textures ************//
+	//*********** Textures ************//
+	//*********** Textures ************//
+	//*********** Textures ************//
+	var panoTex = THREE.ImageUtils.loadTexture("2294472375_24a3b8ef46_o.jpg");
+	var teTex =  THREE.ImageUtils.loadTexture("20110501042543396192.jpg");
+	var SurTex =  THREE.ImageUtils.loadTexture("AM94_012_diffuse_002.jpg");
+				
+				
+	//***********Materials************//
+	//***********Materials************//
+	//***********Materials************//
+	//***********Materials************//
+	//***********Materials************//
+	//initialize material library
+	var mlib = {		
+	"Panorama":         new THREE.MeshLambertMaterial( { map: panoTex, side: THREE.DoubleSide} ),
+	"Tellurion":        new THREE.MeshLambertMaterial( { map: teTex, side: THREE.DoubleSide} ),
+	'Surfboard':        new THREE.MeshLambertMaterial( { map: SurTex} ),
+	}
+	
+		//*********** Models ************//
+		//*********** Models ************//
+		//*********** Models ************//
+		//*********** Models ************//
+		//*********** Models ************//			
+		//create loader
+		var manager = new THREE.LoadingManager();
+		manager.onProgress = function ( item, loaded, total ) {
+
+			//console.log( item, loaded, total );
+
+		};
+		
+		//loader = new THREE.JSONLoader( true );
+		loader = new THREE.ObjectLoader();
+		//document.body.appendChild( loader.statusDomElement );
+		
+		
+		Models[ "tellurion" ].mmap = {
+
+			0: mlib[ "Panorama" ], 			// car body
+			1: mlib[ "Tellurion" ] 		// wheels chrome
+		}
+		
+		loader.load( Models[ "tellurion" ].url, function( object ) { createScene( object, "tellurion") } );
+		
+		
+		Models[ "backpack" ].mmap = {
+
+			0: mlib[ "Panorama" ], 			// car body
+			1: mlib[ "Tellurion" ], 		// wheels chrome
+			2: mlib[ "Panorama" ],
+			3: mlib[ "Panorama" ],
+			4: mlib[ "Panorama" ],
+			5: mlib[ "Panorama" ],
+			6: mlib[ "Panorama" ]
+		}
+		
+		loader.load( Models[ "backpack" ].url, function( object ) { createScene( object, "backpack") } );
+		
+		
+		Models[ "surfboard" ].mmap = {
+
+			0: mlib[ "Surfboard" ], 			// car body
+			1: mlib[ "Surfboard" ], 		// wheels chrome
+		}
+		
+		loader.load( Models[ "surfboard" ].url, function( object ) { createScene( object, "surfboard") } );
+		
+		
+		
+				
+	//*********** CSS3 Render ************//
+	//*********** CSS3 Render ************//
+	//*********** CSS3 Render ************//
+	//*********** CSS3 Render ************//
+	//*********** CSS3 Render ************//
+	
+	var planeMaterial   = new THREE.MeshBasicMaterial({color: 0x000000, opacity: 0.1, side: THREE.DoubleSide });
+	//var planeWidth = 360;
+    //var planeHeight = 120;
+    var planeWidth = 240;
+    var planeHeight = 80;
+	var planeGeometry = new THREE.PlaneGeometry( planeWidth, planeHeight );
+	planeMesh= new THREE.Mesh( planeGeometry, planeMaterial );
+	planeMesh.position.y += planeHeight/2;
+	planeMesh.position.x = 0;
+	planeMesh.position.y = 90;
+	planeMesh.position.z = -90;
+	//meshes.push(planeMesh);
+	// add it to the standard (WebGL) scene
+	//scene.add(planeMesh);
+	
+	// create a new scene to hold CSS
+	cssScene = new THREE.Scene();
+	// create the iframe to contain webpage
+	var element	= document.createElement('iframe')
+	// webpage to be loaded into iframe
+	element.src	= "level2/level2.html";
+	// width of iframe in pixels
+	var elementWidth = 1368;
+	var elementHeight = 768;
+	// force iframe to have same relative dimensions as planeGeometry
+	var aspectRatio = planeHeight / planeWidth;
+	//var elementHeight = elementWidth * aspectRatio;
+	element.style.width  = elementWidth + "px";
+	element.style.height = elementHeight + "px";
+	
+	// create a CSS3DObject to display element
+	cssObject = new THREE.CSS3DObject( element );
+	// synchronize cssObject position/rotation with planeMesh position/rotation 
+	cssObject.position = planeMesh.position;
+	cssObject.rotation = planeMesh.rotation;
+	// resize cssObject to same size as planeMesh (plus a border)
+	var percentBorder = 0.05;
+	cssObject.scale.x /= (1 + percentBorder) * (elementWidth / planeWidth);
+	cssObject.scale.y /= (1 + percentBorder) * (elementWidth / planeWidth);
+	cssScene.add(cssObject);
+	
+	// create a renderer for CSS
+	rendererCSS	= new THREE.CSS3DRenderer();
+	rendererCSS.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( rendererCSS.domElement );
+	
+	//*********** Sprites ************//
+	//*********** Sprites ************//
+	//*********** Sprites ************//
+	//*********** Sprites ************//
+	//*********** Sprites ************//
+	//*********** Sprites ************//
+	
+	geometry = new THREE.Geometry();
+	
+	sprite1 = THREE.ImageUtils.loadTexture( "textures/sprites/snowflake1.png" );
+	sprite2 = THREE.ImageUtils.loadTexture( "textures/sprites/snowflake2.png" );
+	sprite3 = THREE.ImageUtils.loadTexture( "textures/sprites/snowflake3.png" );
+	sprite4 = THREE.ImageUtils.loadTexture( "textures/sprites/snowflake4.png" );
+	sprite5 = THREE.ImageUtils.loadTexture( "textures/sprites/snowflake5.png" );
+
+	for ( i = 0; i < 10000; i ++ ) {
+
+		var vertex = new THREE.Vector3();
+		vertex.x = Math.random() * 2000 - 1000;
+		vertex.y = Math.random() * 2000 - 1000;
+		vertex.z = Math.random() * 2000 - 1000;
+
+		geometry.vertices.push( vertex );
+
+	}
+
+	 parameters = [ [ [1.0, 0.2, 0.5], sprite2, 20 ],
+				   [ [0.95, 0.1, 0.5], sprite3, 15 ],
+				   [ [0.90, 0.05, 0.5], sprite1, 10 ],
+				   [ [0.85, 0, 0.5], sprite5, 8 ],
+				   [ [0.80, 0, 0.5], sprite4, 5 ],
+				   ];
+
+	for ( i = 0; i < parameters.length; i ++ ) {
+
+		color  = parameters[i][0];
+		sprite = parameters[i][1];
+		size   = parameters[i][2];
+
+		materials[i] = new THREE.ParticleBasicMaterial( { size: size, map: sprite, blending: THREE.AdditiveBlending, depthTest: false, transparent : true } );
+		materials[i].color.setHSL( color[0], color[1], color[2] );
+
+		particles = new THREE.ParticleSystem( geometry, materials[i] );
+
+		particles.rotation.x = Math.random() * 6;
+		particles.rotation.y = Math.random() * 6;
+		particles.rotation.z = Math.random() * 6;
+
+		scene.add( particles );
+	}
+	
+	//*********** Event Listener ************//
+	//*********** Event Listener ************//
+	//*********** Event Listener ************//
+	//*********** Event Listener ************//
+	//*********** Event Listener ************//
+	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+	window.addEventListener('keydown', onKeyDown, false);
+	
+	//*********** others ************//
+	//*********** others ************//
+	//*********** others ************//
+	//*********** others ************//
+	//*********** others ************//
+	
+	setTimeout("initTweens()", 3000 );
+	setTimeout("initOthers()", 3000);
+}
+
+function initOthers()
+{
+	sBackground.loop = true;
+	sBackground.play();
+}
+
+function initParticle( particle, delay ) {
+
+	var particle = this instanceof THREE.Sprite ? this : particle;
+	var delay = delay !== undefined ? delay : 0;
+
+	particle.position.set( 0, 0, 0 )
+	particle.scale.x = particle.scale.y = Math.random() * 32 + 16;
+
+	new TWEEN.Tween( particle )
+		.delay( delay )
+		.to( {}, 10000 )
+		.onComplete( initParticle )
+		.start();
+
+	new TWEEN.Tween( particle.position )
+		.delay( delay )
+		.to( { x: Math.random() * 4000 - 2000, y: Math.random() * 1000 - 500, z: Math.random() * 4000 - 2000 }, 10000 )
+		.start();
+
+	new TWEEN.Tween( particle.scale )
+		.delay( delay )
+		.to( { x: 0, y: 0 }, 10000 )
+		.start();
+
+}
+
+function onDocumentMouseDown( event ) {	
+	mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+	mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+	
+	//console.log("x ,y = ", mouse);
+	// create a Ray with origin at the mouse position
+	//   and direction into the scene (camera direction)
+	var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
+	projector.unprojectVector( vector, camera );
+	var ray = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+	// create an array containing all objects in the scene with which the ray intersects
+	var intersects = ray.intersectObjects( meshes );
+
+	// INTERSECTED = the object in the scene currently closest to the camera 
+	//		and intersected by the Ray projected from the mouse position 	
+	
+	// if there is one (or more) intersections
+	if ( intersects.length > 0 )
+	{	console.log(intersects[0].object.parent.name);
+		//console.log(Models['tellurion'].meshes[1].parent.name);
+		//goToBoard();
+		if(intersects[0].object.name == 'Sphere01')
+		{
+			goToNav3();
+		}
+		else if(intersects[0].object.parent.name == 'b01.DAE')
+		{
+			goToNav1();
+		}
+		else if(intersects[0].object.parent.name == 's01.DAE')
+		{
+			goToNav2();
+		}
+	} 	
+}
+
+function initTweens()
+{
+	//to one
+	Tweens[0] = new TWEEN.Tween( camera.position ).to
+	({
+		x: -241,
+		y: 153,
+		z: 407
+	}, 4000 ).easing( TWEEN.Easing.Elastic.Out);
+	
+	//to two
+	Tweens[1] = new TWEEN.Tween( camera.position ).to
+	({
+		x: 0,
+		y: 50,
+		z: 120
+	}, 4000 ).easing( TWEEN.Easing.Elastic.Out);
+	
+	//two zero
+	Tweens[2] = new TWEEN.Tween( camera.position ).to
+	({
+		x: -440,
+		y: 55,
+		z: 226
+	}, 5000 ).easing( TWEEN.Easing.Elastic.Out);
+	
+	rone2two = new TWEEN.Tween( camera.rotation ).to
+	({
+		x: 0.1,
+		y: 0,
+		z: 0
+	}, 5000 ).easing( TWEEN.Easing.Elastic.Out);
+	
+	rzero2one = new TWEEN.Tween( camera.rotation ).to
+	({
+		x: -0.35,
+		y: -0.5,
+		z: -0.18
+	}, 3000 ).easing( TWEEN.Easing.Elastic.Out);
+	
+	
+	r2zero = new TWEEN.Tween( camera.rotation ).to
+	({
+		x: -0.238,
+		y: -1.084,
+		z: -0.211
+	}, 3000 ).easing( TWEEN.Easing.Elastic.Out);
+	
+	mNav1 = new TWEEN.Tween( camera.position ).to
+	({
+		x: 120,
+		y: -10,
+		z: 624
+	}, 5000 ).easing( TWEEN.Easing.Quintic.Out);
+	
+	rNav1 = new TWEEN.Tween( camera.rotation ).to
+	({
+		x: 0.033,
+		y: 0.209,
+		z: -0.006
+	}, 5000 ).easing( TWEEN.Easing.Quintic.Out);
+	
+	mNav2 = new TWEEN.Tween( camera.position ).to
+	({
+		x: -180,
+		y: -224,
+		z: -575
+	}, 5000 ).easing( TWEEN.Easing.Quartic.InOut);
+	
+	rNav2 = new TWEEN.Tween( camera.rotation ).to
+	({
+		x: 2.768,
+		y: -0.283,
+		z: 3.032
+	}, 5000 ).easing( TWEEN.Easing.Quartic.InOut);
+	
+	mNav3 = new TWEEN.Tween( camera.position ).to
+	({
+		x: -440,
+		y: 55,
+		z: 226
+	}, 5000 ).easing( TWEEN.Easing.Cubic.InOut);
+	
+	rNav3 = new TWEEN.Tween( camera.rotation ).to
+	({
+		x: -0.238,
+		y: -1.084,
+		z: -0.211
+	}, 5000 ).easing( TWEEN.Easing.Cubic.InOut);
+}
+
+function goToNav1()
+{
+	mNav1.start();
+	rNav1.start();
+	//rNav1.delay(4000);
+}
+
+function goToNav2()
+{
+	mNav2.start();
+	rNav2.start();
+}
+
+function goToNav3()
+{
+	mNav3.start();
+	rNav3.start();
+}
+
+
+function goToBoard()
+{
+	Tweens[0].start();
+	rzero2one.start();
+	setTimeout("Tweens[1].start()", 1000);
+	setTimeout("rone2two.start()", 1000);
+}
+
+function goToInit()
+{
+	Tweens[2].start();
+	r2zero.start();
+}
+
+function onKeyDown(event){
+				//console.log(event.keyCode);
+				
+				
+				//up
+				/*
+				if(event.keyCode == 38)
+				{
+					//Models['tellurion'].meshes[0].position.z += 1000;
+					//Models['tellurion'].meshes[1].position.z += 1000; 
+					//planeMesh.position.z += 10;
+					//planeMesh.position.z += 100; 
+					for(var i = 0; i < Models['backpack'].meshes.length; i++)
+					{
+						Models['backpack'].meshes[i].position.z += 1000;
+					}
+				}
+				
+				//down
+				else if(event.keyCode == 40)
+				{
+					//Models['tellurion'].meshes[0].position.z -= 1000;
+					//Models['tellurion'].meshes[1].position.z -= 1000;
+					//planeMesh.position.z -= 10;
+					//planeMesh.position.z -= 100;
+					for(var i = 0; i < Models['backpack'].meshes.length; i++)
+					{
+						Models['backpack'].meshes[i].position.z -= 1000;
+					}
+				}
+				
+				//left
+				else if(event.keyCode == 37)
+				{
+					//Models['tellurion'].meshes[0].position.x -= 1000;
+					//Models['tellurion'].meshes[1].position.x -= 1000;
+					//planeMesh.position.y -= 10;
+					//planeMesh.position.x -= 100;
+					for(var i = 0; i < Models['backpack'].meshes.length; i++)
+					{
+						Models['backpack'].meshes[i].position.x -= 1000;
+					}
+				}
+				
+				//right
+				else if(event.keyCode == 39)
+				{
+					//Models['tellurion'].meshes[0].position.x += 1000;
+					//Models['tellurion'].meshes[1].position.x += 1000;
+					//planeMesh.position.y += 10;
+					for(var i = 0; i < Models['backpack'].meshes.length; i++)
+					{
+						Models['backpack'].meshes[i].position.x += 1000;
+					}
+					//planeMesh.position.x += 100;
+				}
+				else if(event.keyCode == 97)
+				{
+					//cMode = 1;
+									
+						//zero2one.start();
+						Tweens[0].start();
+						rzero2one.start();
+						//camera.lookAt(scene.position);
+						//console.log("???");
+				}
+				else if(event.keyCode == 98)
+				{
+						Tweens[1].start();
+						rone2two.start();
+						//camera.lookAt( scene.position );
+				}
+				else if(event.keyCode == 99)
+				{
+					rone2two.start();
+				}
+				else if(event.keyCode == 100)
+				{
+					goToInit();
+				}
+				else if(event.keyCode == 101)
+				{
+					goToBoard();
+				}
+				else if(event.keyCode == 102)
+				{
+					goToNav1();
+				}
+				else if(event.keyCode == 103)
+				{
+					goToNav2();
+				}
+				else if(event.keyCode == 104)
+				{
+					goToNav3();
+				}
+				
+				//console.log("x = " +  Models['tellurion'].meshes[0].position.x);
+				//console.log("z = " +  Models['tellurion'].meshes[0].position.z);
+				//console.log(planeMesh.position);.
+				//console.log(planeMesh.position);
+				console.log("x = ", Models['backpack'].meshes[0].position);
+				*/
+}
+			
+
+
+function createScene( object, name ) {
+			
+	//if not add this line, the model look sharp
+	//geometry.computeVertexNormals();
+	console.log("object = ", object);
+	//
+	var counter = 0;
+	
+	var m = new THREE.MeshFaceMaterial();
+
+	for ( var i in Models[ name ].mmap ) {
+
+		m.materials[ i ] = Models[ name ].mmap[ i ];
+
+	}
+	
+	object.traverse( function ( child ) {
+
+			if ( child instanceof THREE.Mesh ) {
+				
+				
+				child.position.x = Models[ name ].init_position[0];
+				child.position.y = Models[ name ].init_position[1];
+				child.position.z = Models[ name ].init_position[2];
+				//child.rotation.x = Models[ name ].init_rotation[0];
+				//child.rotation.y = Models[ name ].init_rotation[1];
+				//child.rotation.z = Models[ name ].init_rotation[2];
+				child.scale.x = Models[ name ].scale[0];
+				child.scale.y = Models[ name ].scale[1];
+				child.scale.z = Models[ name ].scale[2];
+				
+				child.material = Models[ name ].mmap[counter];;
+				
+					Models[name].meshes[counter] = child;
+				
+				if(name == 'tellurion' && counter == 1)
+				{
+						child.position.x += -10000;
+						child.position.y += 38000;
+						
+						meshes.push(child);
+				}
+				
+				//scene.add(child);
+				
+				else if(name == 'surfboard')
+				{
+					child.rotation.x = Models[ name ].init_rotation[0];
+					child.rotation.y = Models[ name ].init_rotation[1];
+					child.rotation.z = Models[ name ].init_rotation[2];
+					meshes.push(child);
+				}
+				else if(name == 'backpack')
+				{
+					meshes.push(child);
+				}
+				
+				
+				Models[name].isReady = true;
+				
+				counter++;
+			}	
+		} );
+	
+	//meshes.push(object);
+	scene.add(object);
+}
+			
+function animate() 
+{
+    requestAnimationFrame( animate );
+	render();		
+	update();
+}
+
+function update()
+{
+	//console.log("camera position = ", camera.position);
+	//console.log("camera rotation = ", camera.rotation);
+	
+	//camera.rotation.x = 0.1;
+
+	//stats.update();
+	
+	//model transform
+	if(Models['tellurion'].isReady)
+		Models['tellurion'].meshes[1].rotation.z += 0.01;
+	if(Models['backpack'].isReady){
+		for(var i in Models['backpack'].meshes){
+			Models['backpack'].meshes[i].rotation.y += 0.01;
+		}
+	}
+	if(Models['surfboard'].isReady){
+		for(var i in Models['surfboard'].meshes){
+			Models['surfboard'].meshes[i].rotation.y += 0.01;
+		}
+	}
+	
+	//controls.update();
+	TWEEN.update();
+}
+
+function render() 
+{
+	//*********** Sprites ************//
+	//*********** Sprites ************//
+	//*********** Sprites ************//
+	//*********** Sprites ************//
+	//*********** Sprites ************//
+	var time = Date.now() * 0.00005;
+	//console.log(time);
+	
+	for ( i = 0; i < scene.children.length; i ++ ) {
+
+		var object = scene.children[ i ];
+
+		if ( object instanceof THREE.ParticleSystem ) {
+
+			object.rotation.y = time * ( i < 4 ? i + 1 : - ( i + 1 ) );
+
+		}
+
+	}
+
+	for ( i = 0; i < materials.length; i ++ ) {
+
+		color = parameters[i][0];
+
+		h = ( 360 * ( color[0] + time ) % 360 ) / 360;
+		materials[i].color.setHSL( h, color[1], color[2] );
+
+	}
+	
+	//render
+	rendererCSS.render( cssScene, camera );
+	renderer.render( scene, camera );
+}
+
+</script>
+
+</body>
+</html>

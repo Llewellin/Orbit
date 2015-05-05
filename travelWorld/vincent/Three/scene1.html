@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - equirectangular panorama demo</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				background-color: #000000;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				position: absolute;
+				top: 0px; width: 100%;
+				color: #ffffff;
+				padding: 5px;
+				font-family:Monospace;
+				font-size:13px;
+				font-weight: bold;
+				text-align:center;
+			}
+
+			a {
+				color: #ffffff;
+			}
+		</style>
+	</head>
+	<body>
+
+		<div id="container"></div>
+		<div id="info"><a href="http://threejs.org" target="_blank">three.js webgl</a> - equirectangular panorama demo. photo by <a href="http://www.flickr.com/photos/jonragnarsson/2294472375/" target="_blank">Jón Ragnarsson</a>.</div>
+
+		<script src="../build/three.min.js"></script>
+		<!-- new for this example -->
+<script src="js/renderers/CSS3DRenderer.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/THREEx.KeyboardState.js"></script>
+<script src="js/THREEx.FullScreen.js"></script>
+<script src="js/THREEx.WindowResize.js"></script>
+		
+		<video id="video" autoplay loop style="display:none">
+			<source src="Medieval Environment - Unity 3d.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'>
+		</video>
+		
+		<script>
+
+			var camera, scene, renderer;
+
+			var fov = 70,
+			texture_placeholder,
+			isUserInteracting = false,
+			onMouseDownMouseX = 0, onMouseDownMouseY = 0,
+			lon = 0, onMouseDownLon = 0,
+			lat = 0, onMouseDownLat = 0,
+			phi = 0, theta = 0;
+
+			//////for model
+			var mesh_TV;
+			var geometry;
+			var loader;
+			var group;
+			var groupLocZ = 600;
+			var video, texture;
+			var screen;
+			var co;
+			
+			var composer;
+			
+			var TV_Data = 
+			{	
+			   'PosX': -5,
+			   'PosY': -170,
+			   'PosZ': -1040,
+			   'RotX': 0,
+			   'RotY': 0,
+			   'RotZ': 0,
+			   'XRotX': 0,
+			   'XRotY': 0,
+			   'XRotZ': 0,
+			   'ScaX': 10,
+			   'ScaY': 10,
+			   'ScaZ': 10,
+			   'Name': "TV"
+			};
+			////////end for model
+		
+			var Models = {
+
+				"panorama": {
+
+					name: 	"panorama",
+					url:	"test01.js",
+					author: '<a href="http://www.turbosquid.com/3d-models/blender-camaro/411348" target="_blank">dskfnwn</a>',
+					init_position: [ 0.0, 0.0, 0.0 /*0, 1, 0*/ ],
+					init_rotation: [ 0.0, 0.0, 0.0 /*0, 1, 0*/ ],
+					scale: [-100, 100, 100],
+					init_material: 0,
+					body_materials: [ 0 ],
+
+					object:	null,
+					buttons: null,
+					materials: null,
+					mmap: null
+
+				},
+				
+				"tellurion": {
+
+					name: 	"tellurion",
+					url:	"hio9.js",
+					author: '<a href="http://www.turbosquid.com/3d-models/blender-camaro/411348" target="_blank">dskfnwn</a>',
+					init_position: [ 0.0, 0.0, 0.0 /*0, 1, 0*/ ],
+					init_rotation: [ 0.0, 0.0, 0.0/*0, 1, 0*/ ],
+					scale: [100, 100, 100],
+					init_material: 0,
+					body_materials: [ 0 ],
+
+					object:	null,
+					buttons: null,
+					materials: null,
+					mmap: null,
+					meshes: []
+				},
+				
+				"screen": {
+
+					name: 	"screen",
+					url:	null,
+					author: '<a href="http://www.turbosquid.com/3d-models/blender-camaro/411348" target="_blank">dskfnwn</a>',
+					init_position: [ 0.0, 0.0, -100.0 /*0, 1, 0*/ ],
+					init_rotation: [ 0.0, 0.0, 0.0 /*0, 1, 0*/ ],
+					scale: [10, 10, 10],
+					init_material: 0,
+					body_materials: [ 0 ],
+
+					object:	null,
+					buttons: null,
+					materials: null,
+					mmap: null,
+					meshes: []
+				}
+			};
+			
+			var meshCar;
+			var materials = [], parameters;
+			var keyboard = new THREEx.KeyboardState();
+			var controls;
+			init();
+			animate();
+			
+			
+			var meshCir;
+			var meshCir2;
+			
+			
+			
+
+			function init() {
+
+				var container, mesh;
+
+				container = document.getElementById( 'container' );
+				var fuckyou = document.getElementById("video").defaultMuted = "true";
+
+				//create sence
+				scene = new THREE.Scene();
+
+				//initialize camera
+				//camera = new THREE.PerspectiveCamera( fov, window.innerWidth / window.innerHeight, 1, 1100000000 );
+				//camera.target = new THREE.Vector3( 0, 0, 0 );  //不懂，不放畫面是黑的；放了但是數值怎麼設定畫面都一樣
+				//camera.lookAt(scene.position);	
+				//camera.position.z = 1000;
+				//camera.position.x = 0;
+				//camera.position.x = 0;
+				//camera.position.y = 0;
+				//camera.position.z = 500;
+				//camera.position.z = 500;
+					// CAMERA
+	var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
+	var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 20000;
+	camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+	scene.add(camera);
+	camera.position.set(0,150,400);
+	camera.lookAt(scene.position);	
+
+
+
+				
+				//scene.fog = new THREE.FogExp2( 0x000000, 0.0008 );
+				
+				//Create Lights
+				//var light = new THREE.DirectionalLight( 0xffffff );
+				//light.position.set( 0.5, 1, 1 ).normalize();
+				//scene.add( light );
+				
+				var ambient = new THREE.AmbientLight( 0x050505 );
+				//scene.add( ambient );
+
+				directionalLight = new THREE.DirectionalLight( 0xffffff, 0.3 );
+				directionalLight.position.set( 2, 1.2, 10 ).normalize();
+				scene.add( directionalLight );
+
+				
+				directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+				directionalLight.position.set( -2, 1.2, -10 ).normalize();
+				scene.add( directionalLight );
+
+				pointLight = new THREE.PointLight( 0xffaa00, 1.0);
+				pointLight.position.set( 2000, 1200, 10000 );
+				scene.add( pointLight );
+				
+				
+				//create a group
+				group = new THREE.Object3D();
+				
+				//*********** Textures ************//
+				//*********** Textures ************//
+				//*********** Textures ************//
+				//*********** Textures ************//
+				//*********** Textures ************//
+				//create video texture
+				video = document.getElementById( 'video' );
+				texture = new THREE.Texture( video );
+				texture.minFilter = THREE.LinearFilter;
+				texture.magFilter = THREE.LinearFilter;
+				texture.format = THREE.RGBFormat;
+				texture.generateMipmaps = false;  //need to be power of two, and all the same size
+				
+				//panorama texture
+				var panoTex = THREE.ImageUtils.loadTexture("textures/2294472375_24a3b8ef46_o.jpg");
+				var teTex =  THREE.ImageUtils.loadTexture("20110501042543396192.jpg");
+				
+				//useless
+				var r = "textures/cube/Bridge2/";
+				var urls = [ r + "posx.jpg", r + "negx.jpg",
+							 r + "posy.jpg", r + "negy.jpg",
+							 r + "posz.jpg", r + "negz.jpg" ];
+
+				var textureCube = THREE.ImageUtils.loadTextureCube( urls );
+				textureCube.format = THREE.RGBFormat;
+				
+				//***********Materials************//
+				//***********Materials************//
+				//***********Materials************//
+				//***********Materials************//
+				//***********Materials************//
+				//initialize material library
+				var mlib = {
+
+				"Orange": 	new THREE.MeshLambertMaterial( { color: 0xff6600, ambient: 0xff2200, envMap: textureCube, combine: THREE.MixOperation, reflectivity: 0.3 } ),
+				"Blue": 	new THREE.MeshLambertMaterial( { color: 0x001133, ambient: 0x001133, envMap: textureCube, combine: THREE.MixOperation, reflectivity: 0.3 } ),
+				"Red": 		new THREE.MeshLambertMaterial( { color: 0x660000, ambient: 0x330000, envMap: textureCube, combine: THREE.MixOperation, reflectivity: 0.25 } ),
+				"Black": 	new THREE.MeshLambertMaterial( { color: 0x000000, ambient: 0x000000, envMap: textureCube, combine: THREE.MixOperation, reflectivity: 0.15 } ),
+				"White":	new THREE.MeshLambertMaterial( { color: 0xffffff, ambient: 0x666666, envMap: textureCube, combine: THREE.MixOperation, reflectivity: 0.25 } ),
+
+				"Carmine": 	new THREE.MeshPhongMaterial( { color: 0x770000, specular:0xffaaaa, envMap: textureCube, combine: THREE.MultiplyOperation } ),
+				"Gold": 	new THREE.MeshPhongMaterial( { color: 0xaa9944, specular:0xbbaa99, shininess:50, envMap: textureCube, combine: THREE.MultiplyOperation } ),
+				"Bronze":	new THREE.MeshPhongMaterial( { color: 0x150505, specular:0xee6600, shininess:10, envMap: textureCube, combine: THREE.MixOperation, reflectivity: 0.25 } ),
+				"Chrome": 	new THREE.MeshPhongMaterial( { color: 0xffffff, specular:0xffffff, envMap: textureCube, combine: THREE.Multiply } ),
+
+				"Orange metal": new THREE.MeshLambertMaterial( { color: 0xff6600, ambient: 0xff2200, envMap: textureCube, combine: THREE.MultiplyOperation } ),
+				"Blue metal": 	new THREE.MeshLambertMaterial( { color: 0x001133, ambient: 0x002266, envMap: textureCube, combine: THREE.MultiplyOperation } ),
+				"Red metal": 	new THREE.MeshLambertMaterial( { color: 0x770000, envMap: textureCube, combine: THREE.MultiplyOperation } ),
+				"Green metal": 	new THREE.MeshLambertMaterial( { color: 0x007711, envMap: textureCube, combine: THREE.MultiplyOperation } ),
+				"Black metal":	new THREE.MeshLambertMaterial( { color: 0x222222, envMap: textureCube, combine: THREE.MultiplyOperation } ),
+
+				"Pure chrome": 	new THREE.MeshLambertMaterial( { color: 0xffffff, envMap: textureCube } ),
+				"Dark chrome":	new THREE.MeshLambertMaterial( { color: 0x444444, envMap: textureCube } ),
+				"Darker chrome":new THREE.MeshLambertMaterial( { color: 0x222222, envMap: textureCube } ),
+
+				"Black glass": 	new THREE.MeshLambertMaterial( { color: 0x101016, envMap: textureCube, opacity: 0.975, transparent: true } ),
+				"Dark glass":	new THREE.MeshLambertMaterial( { color: 0x101046, envMap: textureCube, opacity: 0.25, transparent: true } ),
+				"Blue glass":	new THREE.MeshLambertMaterial( { color: 0x668899, envMap: textureCube, opacity: 0.75, transparent: true } ),
+				"Light glass":	new THREE.MeshBasicMaterial( { color: 0x223344, envMap: textureCube, opacity: 0.25, transparent: true, combine: THREE.MixOperation, reflectivity: 0.25 } ),
+
+				"Red glass":	new THREE.MeshLambertMaterial( { color: 0xff0000, opacity: 0.75, transparent: true } ),
+				"Yellow glass":	new THREE.MeshLambertMaterial( { color: 0xffffaa, opacity: 0.75, transparent: true } ),
+				"Orange glass":	new THREE.MeshLambertMaterial( { color: 0x995500, opacity: 0.75, transparent: true } ),
+
+				"Orange glass 50":	new THREE.MeshLambertMaterial( { color: 0xffbb00, opacity: 0.5, transparent: true } ),
+				"Red glass 50": 	new THREE.MeshLambertMaterial( { color: 0xff0000, opacity: 0.5, transparent: true } ),
+
+				"Fullblack rough":	new THREE.MeshLambertMaterial( { color: 0x000000 } ),
+				"Black rough":		new THREE.MeshLambertMaterial( { color: 0x050505 } ),
+				"Darkgray rough":	new THREE.MeshLambertMaterial( { color: 0x090909 } ),
+				"Red rough":		new THREE.MeshLambertMaterial( { color: 0x330500 } ),
+
+				"Darkgray shiny":	new THREE.MeshPhongMaterial( { color: 0x000000, specular: 0x050505 } ),
+				"Gray shiny":		new THREE.MeshPhongMaterial( { color: 0x050505, shininess: 20 } ),
+				
+				//useful two
+				"Video":            new THREE.MeshLambertMaterial( { map: texture, overdraw: true} ),
+				"Panorama":         new THREE.MeshLambertMaterial( { map: panoTex, side: THREE.DoubleSide} ),
+				"Tellurion":        new THREE.MeshLambertMaterial( { map: teTex} )
+				}
+				
+				//*********** Models ************//
+				//*********** Models ************//
+				//*********** Models ************//
+				//*********** Models ************//
+				//*********** Models ************//			
+				//create loader
+				var manager = new THREE.LoadingManager();
+				manager.onProgress = function ( item, loaded, total ) {
+
+					//console.log( item, loaded, total );
+
+				};
+				
+				//loader = new THREE.JSONLoader( true );
+				loader = new THREE.ObjectLoader();
+				//document.body.appendChild( loader.statusDomElement );
+				
+				/*
+				//inport TV model
+				var texture00 = THREE.ImageUtils.loadTexture("t01.jpg");
+				var material00 = new THREE.MeshLambertMaterial( { map: texture00} );
+				loader.load( 'TV.js', function( geometry ) { initModel2(geometry, material00, 0)});		
+				*/
+							
+				//panorama sphere
+				//m = Models[ "panorama" ].materials;
+				//mi = Models[ "panorama" ].init_material;
+				
+				
+				Models[ "panorama" ].mmap = {
+
+					0: mlib[ "Panorama" ], 			// car body
+					1: mlib[ "Video" ], 		// wheels chrome
+				}
+					
+					
+				//loader.load( Models[ "panorama" ].url, function( object ) { createScene( object, "panorama") } );
+				
+				Models[ "tellurion" ].mmap = {
+
+					0: mlib[ "Panorama" ], 			// car body
+					1: mlib[ "Panorama" ], 		// wheels chrome
+					2: mlib[ "Panorama" ],
+					3: mlib[ "Panorama" ],
+					4: mlib[ "Panorama" ],
+					5: mlib[ "Panorama" ],
+					6: mlib[ "Panorama" ],
+					7: mlib[ "Panorama" ],
+					8: mlib[ "Panorama" ],
+					9: mlib[ "Panorama" ],
+					10: mlib[ "Panorama" ],
+					11: mlib[ "Tellurion" ],
+					12: mlib[ "Panorama" ],
+					13: mlib[ "Panorama" ],
+					14: mlib[ "Panorama" ],
+					15: mlib[ "Panorama" ],
+					16: mlib[ "Panorama" ],
+					17: mlib[ "Panorama" ],
+					18: mlib[ "Panorama" ],
+					19: mlib[ "Panorama" ],
+					20: mlib[ "Panorama" ],
+					21: mlib[ "Panorama" ],
+					22: mlib[ "Panorama" ],
+					23: mlib[ "Panorama" ],
+					24: mlib[ "Panorama" ],
+					25: mlib[ "Panorama" ],
+					26: mlib[ "Panorama" ],
+					27: mlib[ "Panorama" ],
+					28: mlib[ "Panorama" ],
+					29: mlib[ "Panorama" ],
+					30: mlib[ "Panorama" ]
+				}
+				
+				
+				
+				loader.load( Models[ "tellurion" ].url, function( object ) { createScene( object, "tellurion") } );
+				co = Date.now() * 0.00005+0.1;
+				
+		
+			    var planeGeometry02 = new THREE.PlaneGeometry( 1024, 768 );
+				Models['screen'].meshes[0] = new THREE.Mesh( planeGeometry02, mlib['Tellurion'] );
+				//scene.add(Models['screen'].meshes[0]);
+				//initAttr('screen');
+				
+				//initialize screen
+				//screen_init();
+				
+				//*********** Sprites ************//
+				//*********** Sprites ************//
+				//*********** Sprites ************//
+				//*********** Sprites ************//
+				//*********** Sprites ************//
+				//*********** Sprites ************//
+				
+				geometry = new THREE.Geometry();
+				
+				sprite1 = THREE.ImageUtils.loadTexture( "textures/sprites/snowflake1.png" );
+				sprite2 = THREE.ImageUtils.loadTexture( "textures/sprites/snowflake2.png" );
+				sprite3 = THREE.ImageUtils.loadTexture( "textures/sprites/snowflake3.png" );
+				sprite4 = THREE.ImageUtils.loadTexture( "textures/sprites/snowflake4.png" );
+				sprite5 = THREE.ImageUtils.loadTexture( "textures/sprites/snowflake5.png" );
+
+				for ( i = 0; i < 10000; i ++ ) {
+
+					var vertex = new THREE.Vector3();
+					vertex.x = Math.random() * 2000 - 1000;
+					vertex.y = Math.random() * 2000 - 1000;
+					vertex.z = Math.random() * 2000 - 1000;
+
+					geometry.vertices.push( vertex );
+
+				}
+
+				 parameters = [ [ [1.0, 0.2, 0.5], sprite2, 20 ],
+							   [ [0.95, 0.1, 0.5], sprite3, 15 ],
+							   [ [0.90, 0.05, 0.5], sprite1, 10 ],
+							   [ [0.85, 0, 0.5], sprite5, 8 ],
+							   [ [0.80, 0, 0.5], sprite4, 5 ],
+							   ];
+
+				for ( i = 0; i < parameters.length; i ++ ) {
+
+					color  = parameters[i][0];
+					sprite = parameters[i][1];
+					size   = parameters[i][2];
+
+					materials[i] = new THREE.ParticleBasicMaterial( { size: size, map: sprite, blending: THREE.AdditiveBlending, depthTest: false, transparent : true } );
+					materials[i].color.setHSL( color[0], color[1], color[2] );
+
+					particles = new THREE.ParticleSystem( geometry, materials[i] );
+
+					particles.rotation.x = Math.random() * 6;
+					particles.rotation.y = Math.random() * 6;
+					particles.rotation.z = Math.random() * 6;
+
+					//scene.add( particles );
+
+				}
+				
+				////////////
+	// CUSTOM //
+	////////////
+	
+	var planeMaterial   = new THREE.MeshBasicMaterial({color: 0x000000, opacity: 0.1, side: THREE.DoubleSide });
+	var planeWidth = 360;
+    var planeHeight = 120;
+	var planeGeometry = new THREE.PlaneGeometry( planeWidth, planeHeight );
+	var planeMesh= new THREE.Mesh( planeGeometry, planeMaterial );
+	planeMesh.position.y += planeHeight/2;
+	// add it to the standard (WebGL) scene
+	//scene.add(planeMesh);
+	
+	// create a new scene to hold CSS
+	cssScene = new THREE.Scene();
+	// create the iframe to contain webpage
+	var element	= document.createElement('iframe')
+	// webpage to be loaded into iframe
+	element.src	= "index.html";
+	// width of iframe in pixels
+	var elementWidth = 1024;
+	// force iframe to have same relative dimensions as planeGeometry
+	var aspectRatio = planeHeight / planeWidth;
+	var elementHeight = elementWidth * aspectRatio;
+	element.style.width  = elementWidth + "px";
+	element.style.height = elementHeight + "px";
+	
+	// create a CSS3DObject to display element
+	var cssObject = new THREE.CSS3DObject( element );
+	// synchronize cssObject position/rotation with planeMesh position/rotation 
+	cssObject.position = planeMesh.position;
+	cssObject.rotation = planeMesh.rotation;
+	// resize cssObject to same size as planeMesh (plus a border)
+	var percentBorder = 0.05;
+	cssObject.scale.x /= (1 + percentBorder) * (elementWidth / planeWidth);
+	cssObject.scale.y /= (1 + percentBorder) * (elementWidth / planeWidth);
+	//cssScene.add(cssObject);
+	
+	// create a renderer for CSS
+	rendererCSS	= new THREE.CSS3DRenderer();
+	rendererCSS.setSize( window.innerWidth, window.innerHeight );
+	rendererCSS.domElement.style.position = 'absolute';
+	rendererCSS.domElement.style.top	  = 0;
+	rendererCSS.domElement.style.margin	  = 0;
+	rendererCSS.domElement.style.padding  = 0;
+	document.body.appendChild( rendererCSS.domElement );
+	
+	//////////////////////////////
+	//////////////////////////////
+	//////////////////////////////
+	//////////////////////////////
+	var imagePrefix = "images/dawnmountain-";
+	var directions  = ["xpos", "xneg", "ypos", "yneg", "zpos", "zneg"];
+	var imageSuffix = ".png";
+	var skyGeometry = new THREE.CubeGeometry( 5000, 5000, 5000 );	
+	
+	var materialArray = [];
+	for (var i = 0; i < 6; i++)
+		materialArray.push( new THREE.MeshBasicMaterial({
+			map: THREE.ImageUtils.loadTexture( imagePrefix + directions[i] + imageSuffix ),
+			side: THREE.BackSide
+		}));
+	var skyMaterial = new THREE.MeshFaceMaterial( materialArray );
+	var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
+	scene.add( skyBox );
+				
+				//*********** Renderer ************//
+				//*********** Renderer ************//
+				//*********** Renderer ************//
+				//*********** Renderer ************//
+				//*********** Renderer ************//
+				renderer = new THREE.WebGLRenderer();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				container.appendChild( renderer.domElement );
+				container.appendChild( rendererCSS.domElement );
+				
+				
+				 control = new THREE.OrbitControls( camera, renderer.domElement );
+//rendererCSS.domElement.appendChild( renderer.domElement );
+				//*********** Event Listener ************//
+				//*********** Event Listener ************//
+				//*********** Event Listener ************//
+				//*********** Event Listener ************//
+				//*********** Event Listener ************//
+				document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+				document.addEventListener( 'mousewheel', onDocumentMouseWheel, false );
+				document.addEventListener( 'DOMMouseScroll', onDocumentMouseWheel, false);
+				window.addEventListener( 'resize', onWindowResize, false );
+				window.addEventListener('keydown', onKeyDown, false);
+				
+			
+			}
+			
+			function createScene( object, name ) {
+			
+				//if not add this line, the model look sharp
+				//geometry.computeVertexNormals();
+				console.log("object = ", object);
+				//
+				var counter = 0;
+				
+				var m = new THREE.MeshFaceMaterial();
+					//s = Models[ car ].scale * 1,
+					//r = Models[ car ].init_rotation,
+					//materials = Models[ car ].materials,
+					//mi = Models[ car ].init_material,
+					//bm = Models[ car ].body_materials;
+
+				for ( var i in Models[ name ].mmap ) {
+
+					m.materials[ i ] = Models[ name ].mmap[ i ];
+
+				}
+				
+				object.traverse( function ( child ) {
+
+						if ( child instanceof THREE.Mesh ) {
+							
+							/*
+							child.position.x = Models[ name ].init_position[0];
+							child.position.y = Models[ name ].init_position[1];
+							child.position.z = Models[ name ].init_position[2];
+							child.rotation.x = Models[ name ].init_rotation[0];
+							child.rotation.y = Models[ name ].init_rotation[1];
+							child.rotation.z = Models[ name ].init_rotation[2];
+							*/
+							//child.rotation.y = 1.4;
+							child.scale.x = Models[ name ].scale[0];
+							child.scale.y = Models[ name ].scale[1];
+							child.scale.z = Models[ name ].scale[2];
+							
+							child.material = Models[ name ].mmap[counter];;
+							
+							Models['tellurion'].meshes[counter] = child;
+							
+							//scene.add(child);
+							
+							counter++;
+						}	
+					} );
+				
+				scene.add(object);
+			}
+			function initAttr(name)
+			{
+				Models[name].meshes[0].position.x = Models[ name ].init_position[0];
+				Models[name].meshes[0].position.y = Models[ name ].init_position[1];
+				Models[name].meshes[0].position.z = Models[ name ].init_position[2];
+				Models[name].meshes[0].rotation.x = Models[ name ].init_rotation[0];
+				Models[name].meshes[0].rotation.y= Models[ name ].init_rotation[1];
+				Models[name].meshes[0].rotation.z = Models[ name ].init_rotation[2];
+				Models[name].meshes[0].scale.x = Models[ name ].scale[0];
+				Models[name].meshes[0].scale.y = Models[ name ].scale[1];
+				Models[name].meshes[0].scale.z = Models[ name ].scale[2];
+			}
+			
+			//not use
+			function screen_init()
+			{
+				var texture20 = THREE.ImageUtils.loadTexture("t01.jpg");
+				var material20 = new THREE.MeshLambertMaterial(  { map: texture, overdraw: true } );
+				var mesh20 = new THREE.PlaneGeometry( 340, 200, 4, 4 );
+				screen = new THREE.Mesh( mesh20, material20 );
+				//plane.rotation.x =  Math.PI*0.3;
+				screen.scale.x = screen.scale.y = screen.scale.z = 1.0;
+				screen.position.x = 0;
+				screen.position.y = 0;
+				screen.position.z = -1000;
+				screen.rotation.y = -Math.PI*0.8;
+				screen.rotation.y = Math.PI*0.4;
+				screen.rotation.y = Math.PI*0.3;
+				//group.add(screen);
+				//scene.add(group);
+				
+				
+				group.position.z = groupLocZ;
+			}
+			
+			//not use
+			function initModel2(geometry, material, i) 
+			{
+				//要先document.body.appendChild( loader.statusDomElement ); 後才有用
+				loader.statusDomElement.innerHTML = "Creating model ...";
+				
+				//geometry.computeTangents();
+				//geometry.mergeVertices();
+				//geometry.computeCentroids();
+				//geometry.computeFaceNormals();
+				geometry.computeVertexNormals();
+			
+				switch(i)
+				{
+					case 0:
+						mesh_TV = new THREE.Mesh(geometry, material);
+						mesh_TV.position.x = TV_Data.PosX;
+						mesh_TV.position.y = TV_Data.PosY;
+						mesh_TV.position.z = TV_Data.PosZ;
+						mesh_TV.rotation.x = TV_Data.RotX;
+						mesh_TV.rotation.y = TV_Data.RotY;
+						mesh_TV.rotation.z = TV_Data.RotZ;
+						mesh_TV.scale.x = TV_Data.ScaX;
+						mesh_TV.scale.y = TV_Data.ScaY;
+						mesh_TV.scale.z = TV_Data.ScaZ;
+						mesh_TV.name = TV_Data.Name;
+						//spheres.push( mesh_aboutUs );
+						group.add(mesh_TV);
+						scene.add( group );
+						//isFinish++;
+						break;
+						
+					case 1:
+						var m = new THREE.MeshFaceMaterial(),
+						s = CARS[ car ].scale * 1,
+						r = CARS[ car ].init_rotation,
+						materials = CARS[ car ].materials,
+						mi = CARS[ car ].init_material,
+						bm = CARS[ car ].body_materials;
+
+						//for ( var i in CARS[ car ].mmap ) {
+
+						//m.materials[ i ] = CARS[ car ].mmap[ i ];
+
+						//}
+
+						//var mesh = new THREE.Mesh( geometry, m );
+						break;
+						
+					case 2:
+						meshCir = new THREE.Mesh(geometry, material);
+						meshCir.position.x = 0;
+						meshCir.position.y = 0;
+						meshCir.position.z = -300;
+						meshCir.rotation.x = 0;
+						meshCir.rotation.y = 0;
+						meshCir.rotation.z = 0;
+						meshCir.scale.x = -100;
+						meshCir.scale.y = 100;
+						meshCir.scale.z = 100;
+						meshCir.name = "dd";
+						//spheres.push( mesh_aboutUs );
+						//group.add(mesh);
+						//scene.add( meshCir );
+						//isFinish++;
+						break;
+				}
+			}
+			
+			//use for debug
+			function onKeyDown(event)
+			{
+				//console.log(event.keyCode);
+				
+				console.log("x = " +  Models['tellurion'].meshes[1].position.x);
+				console.log("y = " +  Models['tellurion'].meshes[1].position.y);
+				//up
+				if(event.keyCode == 38)
+				{
+					Models['tellurion'].meshes[1].position.y += 1000; 
+				}
+				
+				//down
+				else if(event.keyCode == 40)
+				{
+					Models['tellurion'].meshes[1].position.y -= 1000;
+				}
+				
+				//left
+				else if(event.keyCode == 37)
+				{
+					Models['tellurion'].meshes[1].position.x -= 1000;
+				}
+				
+				//right
+				else if(event.keyCode == 39)
+				{
+					Models['tellurion'].meshes[1].position.x += 1000;
+				}
+				
+				//scale down
+				else if(event.keyCode == 74)
+				{
+					
+				}
+				
+				//scale up
+				else if(event.keyCode == 75)
+				{
+					
+				}
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function onDocumentMouseDown( event ) {
+
+				event.preventDefault();
+
+				isUserInteracting = true;
+
+				onPointerDownPointerX = event.clientX;
+				onPointerDownPointerY = event.clientY;
+
+				onPointerDownLon = lon;
+				onPointerDownLat = lat;
+
+			}
+
+			function onDocumentMouseMove( event ) {
+
+				if ( isUserInteracting ) {
+
+					lon = ( onPointerDownPointerX - event.clientX ) * 0.1 + onPointerDownLon;
+					lat = ( event.clientY - onPointerDownPointerY ) * 0.1 + onPointerDownLat;
+
+				}
+			}
+
+			function onDocumentMouseUp( event ) {
+
+				isUserInteracting = false;
+
+			}
+
+			function onDocumentMouseWheel( event ) {
+
+				// WebKit
+
+				if ( event.wheelDeltaY ) {
+
+					fov -= event.wheelDeltaY * 0.05;
+
+				// Opera / Explorer 9
+
+				} else if ( event.wheelDelta ) {
+
+					fov -= event.wheelDelta * 0.05;
+
+				// Firefox
+
+				} else if ( event.detail ) {
+
+					fov += event.detail * 1.0;
+
+				}
+
+				camera.projectionMatrix.makePerspective( fov, window.innerWidth / window.innerHeight, 1, 1100 );
+				render();
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+				render();
+				update();
+			}
+			
+			function update()
+{
+	if ( keyboard.pressed("z") ) 
+	{ 
+		// do something
+	}
+	
+	//controls.update();
+	//stats.update();
+}
+
+
+			function render() {
+				
+				rendererCSS.render( cssScene, camera );
+
+				lat = Math.max( - 85, Math.min( 85, lat ) );
+				phi = THREE.Math.degToRad( 90 - lat );
+				theta = THREE.Math.degToRad( lon );
+
+				//camera.target.x = 500 * Math.sin( phi ) * Math.cos( theta );
+				//camera.target.y = 500 * Math.cos( phi );
+				//camera.target.z = 500 * Math.sin( phi ) * Math.sin( theta );
+
+				//camera.lookAt( camera.target );
+
+				//不加這行video會是黑的
+				/*if ( video.readyState === video.HAVE_ENOUGH_DATA ) {
+
+					if ( texture ) texture.needsUpdate = true;
+
+				}
+*/
+				/*
+				// distortion
+				camera.position.x = - camera.target.x;
+				camera.position.y = - camera.target.y;
+				camera.position.z = - camera.target.z;
+				*/
+				//*********** Sprites ************//
+				//*********** Sprites ************//
+				//*********** Sprites ************//
+				//*********** Sprites ************//
+				//*********** Sprites ************//
+				//*********** Sprites ************//
+				var time = Date.now() * 0.00005;
+				//console.log(time);
+				/*if(time > co)
+				{
+					for(var i = 0; i <2; i++)
+					{
+						//Models['tellurion'].meshes[i].rotation.x += 0.01;
+						//Models['tellurion'].meshes[i].rotation.y += 0.01;
+					}
+				}
+				
+				for ( i = 0; i < scene.children.length; i ++ ) {
+
+					var object = scene.children[ i ];
+
+					if ( object instanceof THREE.ParticleSystem ) {
+
+						object.rotation.y = time * ( i < 4 ? i + 1 : - ( i + 1 ) );
+
+					}
+
+				}
+
+				for ( i = 0; i < materials.length; i ++ ) {
+
+					color = parameters[i][0];
+
+					h = ( 360 * ( color[0] + time ) % 360 ) / 360;
+					materials[i].color.setHSL( h, color[1], color[2] );
+
+				}
+				*/
+				renderer.render( scene, camera );
+				//composer.render();
+
+			}
+
+		</script>
+	</body>
+</html>
