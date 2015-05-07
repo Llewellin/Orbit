@@ -1,1 +1,1 @@
-It need to be run on the server.
+Please run it on server environment.
